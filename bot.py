@@ -1314,18 +1314,18 @@ def main():
     )
     
     # Добавляем обработчик для редактирования встречи
-    conv_handler_edit_meeting = ConversationHandler(
-        entry_points=[CallbackQueryHandler(edit_meeting_start, pattern="^edit_")],
-        states={
-            EDIT_MEETING_FIELD: [
-                CallbackQueryHandler(edit_meeting_field),
-                CallbackQueryHandler(edit_meeting_callback),
-                MessageHandler(filters.TEXT & ~filters.COMMAND, edit_meeting_input)
-            ]
-        },
-        fallbacks=[CommandHandler("cancel", cancel)],
-        allow_reentry=True
-    )
+conv_handler_edit_meeting = ConversationHandler(
+    entry_points=[CallbackQueryHandler(edit_meeting_start, pattern="^edit_")],
+    states={
+        EDIT_MEETING_FIELD: [
+            CallbackQueryHandler(edit_meeting_field, pattern="^edit_field_"),  # ← ДОБАВЬТЕ pattern
+            CallbackQueryHandler(edit_meeting_callback),
+            MessageHandler(filters.TEXT & ~filters.COMMAND, edit_meeting_input)
+        ]
+    },
+    fallbacks=[CommandHandler("cancel", cancel)],
+    allow_reentry=True
+)
     
     # Добавляем обработчик для управления пользователями (админ)
     conv_handler_admin_users = ConversationHandler(
