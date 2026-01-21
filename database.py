@@ -1,5 +1,5 @@
-import psycopg2
-import psycopg2.extras
+import psycopg  # Изменено
+from psycopg.rows import dict_row  # Для совместимости с psycopg2.extras.DictCursor
 from config import DB_CONFIG
 from datetime import datetime
 
