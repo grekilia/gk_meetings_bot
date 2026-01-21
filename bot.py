@@ -1321,18 +1321,18 @@ def main():
     )
     
     # Добавляем обработчик для редактирования встречи
-conv_handler_edit_meeting = ConversationHandler(
-    entry_points=[CallbackQueryHandler(edit_meeting_start, pattern="^edit_")],
-    states={
-        EDIT_MEETING_FIELD: [
-            CallbackQueryHandler(edit_meeting_field, pattern="^edit_field_"),  # ← ДОБАВЬТЕ pattern
-            CallbackQueryHandler(edit_meeting_callback),
-            MessageHandler(filters.TEXT & ~filters.COMMAND, edit_meeting_input)
-        ]
-    },
-    fallbacks=[CommandHandler("cancel", cancel)],
-    allow_reentry=True
-)
+    conv_handler_edit_meeting = ConversationHandler(
+        entry_points=[CallbackQueryHandler(edit_meeting_start, pattern="^edit_")],
+        states={
+            EDIT_MEETING_FIELD: [
+                CallbackQueryHandler(edit_meeting_field, pattern="^edit_field_"),
+                CallbackQueryHandler(edit_meeting_callback),
+                MessageHandler(filters.TEXT & ~filters.COMMAND, edit_meeting_input)
+            ]
+        },
+        fallbacks=[CommandHandler("cancel", cancel)],
+        allow_reentry=True
+    )
     
     # Добавляем обработчик для управления пользователями (админ)
     conv_handler_admin_users = ConversationHandler(
@@ -1354,7 +1354,7 @@ conv_handler_edit_meeting = ConversationHandler(
     # Обработчики для просмотра встреч
     application.add_handler(CallbackQueryHandler(view_meetings_callback, pattern="^(year_|month_|meeting_|prev_page_|next_page_|back_to_)"))
     
-        # Обработчики для удаления встреч (три отдельных)
+    # Обработчики для удаления встреч (три отдельных)
     application.add_handler(CallbackQueryHandler(delete_meeting_start, pattern="^delete_[0-9]+$"))  # delete_123
     application.add_handler(CallbackQueryHandler(delete_meeting_confirm, pattern="^delete_confirm_"))  # delete_confirm_123
     application.add_handler(CallbackQueryHandler(delete_meeting_cancel, pattern="^delete_cancel_"))  # delete_cancel_123
@@ -1371,6 +1371,3 @@ conv_handler_edit_meeting = ConversationHandler(
         drop_pending_updates=True,
         allowed_updates=Update.ALL_TYPES
     )
-
-if __name__ == '__main__':
-    main()
