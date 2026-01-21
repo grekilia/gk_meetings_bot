@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: moscow-meetings-bot
+    env: python
+    region: frankfurt  # или другой регион
+    buildCommand: pip install -r requirements.txt && python init_db.py
+    startCommand: python bot.py
+    envVars:
+      - key: BOT_TOKEN
+        sync: false
+      - key: DATABASE_URL
+        fromDatabase:
+          name: moscow-meetings-db  # имя вашей БД на Render
+          property: connectionString
+      - key: ADMIN_IDS
+        sync: false
