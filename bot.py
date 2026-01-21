@@ -1288,28 +1288,17 @@ async def cancel(update: Update, context):
     return ConversationHandler.END
 
 # === ОСНОВНАЯ ФУНКЦИЯ ===
-def main():
-    """Основная функция запуска бота"""
+async def main():
+    """Асинхронная основная функция"""
+    # Сначала удаляем вебхук
+    from telegram import Bot
+    bot = Bot(token=BOT_TOKEN)
+    await bot.delete_webhook(drop_pending_updates=True)
+    print("Вебхук удален")
     
-    # Сначала удаляем вебхук на всякий случай
-    import asyncio
-    
-    async def delete_webhook():
-        from telegram import Bot
-        bot = Bot(token=BOT_TOKEN)
-        await bot.delete_webhook(drop_pending_updates=True)
-        print("Вебхук удален")
-    
-    try:
-        asyncio.run(delete_webhook())
-    except:
-        pass
-        
-    # Создаем приложение с явным указанием контекста
+    # Создаем приложение
     context_types = ContextTypes()
     application = Application.builder().token(BOT_TOKEN).context_types(context_types).build()
-    
-
     
     # Добавляем обработчик команды /start
     application.add_handler(CommandHandler("start", start))
@@ -1376,7 +1365,8 @@ def main():
     
     # Запускаем бота
     print("Бот запущен...")
-    application.run_polling(allowed_updates=Update.ALL_TYPES)
+    await application.run_polling(allowed_updates=Update.ALL_TYPES)
 
 if __name__ == '__main__':
-    main()
+    import asyncio
+    asyncio.run(main())
