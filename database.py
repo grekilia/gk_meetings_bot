@@ -1,5 +1,5 @@
-import psycopg  # Изменено
-from psycopg.rows import dict_row  # Для совместимости с psycopg2.extras.DictCursor
+import psycopg
+from psycopg.rows import dict_row
 from config import DB_CONFIG
 from datetime import datetime
 
@@ -11,7 +11,13 @@ class Database:
     def connect(self):
         """Установка соединения с базой данных"""
         try:
-            self.conn = psycopg2.connect(**DB_CONFIG)
+            if 'dsn' in DB_CONFIG:
+                # Используем строку подключения
+                self.conn = psycopg.connect(DB_CONFIG['dsn'])
+            else:
+                # Используем отдельные параметры
+                self.conn = psycopg.connect(**DB_CONFIG)
+            
             self.conn.autocommit = False
             print("Подключение к базе данных установлено")
         except Exception as e:
@@ -20,7 +26,7 @@ class Database:
     
     def get_cursor(self):
         """Получение курсора с поддержкой именованных параметров"""
-        return self.conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        return self.conn.cursor(row_factory=dict_row)
     
     # === ПОЛЬЗОВАТЕЛИ ===
     def add_user(self, telegram_id, full_name, role='user'):
@@ -50,6 +56,7 @@ class Database:
         """Удаление пользователя"""
         with self.get_cursor() as cursor:
             cursor.execute("DELETE FROM users WHERE telegram_id = %s", (telegram_id,))
+            self.conn.commit()
             return cursor.rowcount > 0
     
     # === КОМПЛЕКСЫ И ОИВ ===
@@ -93,7 +100,8 @@ class Database:
                 RETURNING id
             """, (user_id, user_name, oiv_id, meeting_date, status, duration_minutes, summary))
             self.conn.commit()
-            return cursor.fetchone()['id']
+            result = cursor.fetchone()
+            return result['id'] if result else None
     
     def get_meeting(self, meeting_id):
         """Получение встречи по ID с полной информацией"""
@@ -162,7 +170,8 @@ class Database:
                 FROM meetings 
                 ORDER BY year DESC
             """)
-            return [int(row['year']) for row in cursor.fetchall()]
+            results = cursor.fetchall()
+            return [int(row['year']) for row in results if row['year']]
     
     def get_meeting_months(self, year):
         """Получение списка месяцев с встречами для указанного года"""
@@ -173,10 +182,14 @@ class Database:
                 WHERE EXTRACT(YEAR FROM meeting_date) = %s
                 ORDER BY month DESC
             """, (year,))
-            return [int(row['month']) for row in cursor.fetchall()]
+            results = cursor.fetchall()
+            return [int(row['month']) for row in results if row['month']]
     
     def update_meeting(self, meeting_id, **fields):
         """Обновление данных встречи"""
+        if not fields:
+            return False
+        
         set_clause = ", ".join([f"{key} = %s" for key in fields.keys()])
         values = list(fields.values())
         values.append(meeting_id)
