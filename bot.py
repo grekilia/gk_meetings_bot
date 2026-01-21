@@ -7,7 +7,8 @@ from telegram.ext import (
     MessageHandler,
     CallbackQueryHandler,
     ConversationHandler,
-    filters
+    filters,
+    ContextTypes
 )
 from config import BOT_TOKEN, ADMIN_IDS
 from database import db
@@ -1289,8 +1290,11 @@ async def cancel(update: Update, context):
 # === ОСНОВНАЯ ФУНКЦИЯ ===
 def main():
     """Основная функция запуска бота"""
-    # Создаем приложение
-    application = Application.builder().token(BOT_TOKEN).build()
+    # Создаем приложение с явным указанием контекста
+    context_types = ContextTypes()
+    application = Application.builder().token(BOT_TOKEN).context_types(context_types).build()
+    
+
     
     # Добавляем обработчик команды /start
     application.add_handler(CommandHandler("start", start))
