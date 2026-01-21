@@ -867,6 +867,7 @@ async def delete_meeting_start(update: Update, context):
         )
         return
     
+    # Получаем ID встречи (формат: "delete_123")
     meeting_id = int(query.data.split('_')[1])
     meeting = db.get_meeting(meeting_id)
     
@@ -892,52 +893,58 @@ async def delete_meeting_confirm(update: Update, context):
     query = update.callback_query
     await query.answer()
     
-    if query.data.startswith('delete_cancel_'):
-        # Отмена удаления
-        meeting_id = int(query.data.split('_')[2])
-        meeting = db.get_meeting(meeting_id)
-        
-        # Возвращаемся к просмотру встречи
-        date_str = meeting['meeting_date'].strftime('%d.%m.%Y')
-        
-        meeting_text = (
-            f"✅ *Встреча #{meeting['id']}*\n\n"
-            f"🏛️ *Комплекс:* {meeting['complex_name']}\n"
-            f"🏢 *ОИВ:* {meeting['oiv_name']}\n"
-            f"📅 *Дата:* {date_str}\n"
-            f"📊 *Статус:* {meeting['status']}\n"
-        )
-        
-        if meeting['duration_minutes']:
-            meeting_text += f"⏱️ *Длительность:* {meeting['duration_minutes']} мин\n"
-        
-        meeting_text += f"👤 *Добавил:* {meeting['user_name']}\n"
-        meeting_text += f"📝 *Содержание:*\n{meeting['summary']}"
-        
-        await query.edit_message_text(
-            meeting_text,
-            reply_markup=get_meeting_details_keyboard(meeting_id, 'admin'),
-            parse_mode='Markdown'
-        )
+    # Подтверждение удаления (формат: "delete_confirm_123")
+    meeting_id = int(query.data.split('_')[2])
     
-    elif query.data.startswith('delete_confirm_'):
-        # Подтверждение удаления
-        meeting_id = int(query.data.split('_')[2])
-        
-        # Удаляем встречу
-        success = db.delete_meeting(meeting_id)
-        
-        if success:
-            await query.edit_message_text(
-                f"✅ Встреча #{meeting_id} успешно удалена.\n\n"
-                "Вы можете продолжить просмотр других встреч."
-            )
-        else:
-            await query.edit_message_text(
-                f"❌ Не удалось удалить встречу #{meeting_id}.\n"
-                "Попробуйте снова или обратитесь к разработчику."
-            )
+    # Удаляем встречу
+    success = db.delete_meeting(meeting_id)
+    
+    if success:
+        await query.edit_message_text(
+            f"✅ Встреча #{meeting_id} успешно удалена.\n\n"
+            "Вы можете продолжить просмотр других встреч."
+        )
+    else:
+        await query.edit_message_text(
+            f"❌ Не удалось удалить встречу #{meeting_id}.\n"
+            "Попробуйте снова или обратитесь к разработчику."
+        )
 
+async def delete_meeting_cancel(update: Update, context):
+    """Отмена удаления встречи"""
+    query = update.callback_query
+    await query.answer()
+    
+    # Отмена удаления (формат: "delete_cancel_123")
+    meeting_id = int(query.data.split('_')[2])
+    meeting = db.get_meeting(meeting_id)
+    
+    if not meeting:
+        await query.edit_message_text("❌ Встреча не найдена.")
+        return
+    
+    # Возвращаемся к просмотру встречи
+    date_str = meeting['meeting_date'].strftime('%d.%m.%Y')
+    
+    meeting_text = (
+        f"✅ *Встреча #{meeting['id']}*\n\n"
+        f"🏛️ *Комплекс:* {meeting['complex_name']}\n"
+        f"🏢 *ОИВ:* {meeting['oiv_name']}\n"
+        f"📅 *Дата:* {date_str}\n"
+        f"📊 *Статус:* {meeting['status']}\n"
+    )
+    
+    if meeting['duration_minutes']:
+        meeting_text += f"⏱️ *Длительность:* {meeting['duration_minutes']} мин\n"
+    
+    meeting_text += f"👤 *Добавил:* {meeting['user_name']}\n"
+    meeting_text += f"📝 *Содержание:*\n{meeting['summary']}"
+    
+    await query.edit_message_text(
+        meeting_text,
+        reply_markup=get_meeting_details_keyboard(meeting_id, 'admin'),
+        parse_mode='Markdown'
+    )
 # === УПРАВЛЕНИЕ ПОЛЬЗОВАТЕЛЯМИ (только для админа) ===
 async def admin_users_start(update: Update, context):
     """Начало управления пользователями"""
@@ -1347,9 +1354,10 @@ conv_handler_edit_meeting = ConversationHandler(
     # Обработчики для просмотра встреч
     application.add_handler(CallbackQueryHandler(view_meetings_callback, pattern="^(year_|month_|meeting_|prev_page_|next_page_|back_to_)"))
     
-    # Обработчики для удаления встреч
-    application.add_handler(CallbackQueryHandler(delete_meeting_start, pattern="^delete_"))
-    application.add_handler(CallbackQueryHandler(delete_meeting_confirm, pattern="^delete_confirm_|^delete_cancel_"))
+        # Обработчики для удаления встреч (три отдельных)
+    application.add_handler(CallbackQueryHandler(delete_meeting_start, pattern="^delete_[0-9]+$"))  # delete_123
+    application.add_handler(CallbackQueryHandler(delete_meeting_confirm, pattern="^delete_confirm_"))  # delete_confirm_123
+    application.add_handler(CallbackQueryHandler(delete_meeting_cancel, pattern="^delete_cancel_"))  # delete_cancel_123
     
     # Обработчик текстовых сообщений (кнопки главного меню)
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
