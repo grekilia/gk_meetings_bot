@@ -1365,7 +1365,10 @@ async def main():
     
     # Запускаем бота
     print("Бот запущен...")
-    await application.run_polling(allowed_updates=Update.ALL_TYPES)
+    await application.run_polling(
+    drop_pending_updates=True,  # ← ДОБАВЬТЕ ЭТОТ ПАРАМЕТР
+    allowed_updates=Update.ALL_TYPES
+)
 
 if __name__ == '__main__':
     import asyncio
