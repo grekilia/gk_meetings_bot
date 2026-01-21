@@ -1,6 +1,5 @@
 import os
 from dotenv import load_dotenv
-import psycopg  # Изменено с psycopg2 на psycopg
 
 load_dotenv()
 
@@ -13,7 +12,7 @@ if DATABASE_URL:
         'dsn': DATABASE_URL
     }
 else:
-    # Иначе используем отдельные параметры (для обратной совместимости)
+    # Иначе используем отдельные параметры
     DB_CONFIG = {
         'host': os.getenv('DB_HOST'),
         'port': os.getenv('DB_PORT'),
