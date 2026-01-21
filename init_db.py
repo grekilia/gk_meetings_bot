@@ -4,7 +4,8 @@
 Заполняет справочники complexes и oivs данными.
 """
 
-import psycopg2
+import psycopg  # Изменено
+from psycopg.rows import dict_row
 from config import DB_CONFIG
 
 # Данные комплексов и ОИВ (из вашего списка)
@@ -79,8 +80,12 @@ def init_database():
     
     try:
         # Подключаемся к базе данных
-        conn = psycopg2.connect(**DB_CONFIG)
-        cursor = conn.cursor()
+        if 'dsn' in DB_CONFIG:
+            conn = psycopg.connect(DB_CONFIG['dsn'])
+        else:
+            conn = psycopg.connect(**DB_CONFIG)
+        
+        cursor = conn.cursor(row_factory=dict_row)
         
         # Создаем таблицы (если их нет)
         print("Создание таблиц...")
@@ -145,10 +150,10 @@ def init_database():
         for complex_name, oiv_list in COMPLEXES_OIVS.items():
             # Получаем ID комплекса
             cursor.execute("SELECT id FROM complexes WHERE name = %s", (complex_name,))
-            complex_id = cursor.fetchone()
+            result = cursor.fetchone()
             
-            if complex_id:
-                complex_id = complex_id[0]
+            if result:
+                complex_id = result['id']
                 
                 # Добавляем ОИВ этого комплекса
                 for oiv_name in oiv_list:
